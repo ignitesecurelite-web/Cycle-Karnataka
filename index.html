@@ -1,1 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cycle Karnataka (prototype)</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--tx:#14231b;--mut:#5b6b62;--pri:#0f7b4f;--pt:#fff;--bd:#d5dfd9;--err:#b3261e;--eb:#fdeceb;--wn:#fff4d6;--wt:#6b4a00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1612;--card:#17231c;--tx:#e8f1ec;--mut:#9fb2a7;--pri:#3fbf88;--pt:#06150d;--bd:#2a3c32;--err:#ff8a80;--eb:#3a1c1a;--wn:#3a2e0d;--wt:#f3d98a}}
+:root[data-theme="dark"]{--bg:#0e1612;--card:#17231c;--tx:#e8f1ec;--mut:#9fb2a7;--pri:#3fbf88;--pt:#06150d;--bd:#2a3c32;--err:#ff8a80;--eb:#3a1c1a;--wn:#3a2e0d;--wt:#f3d98a}
+*{box-sizing:border-box}
+body{margin:0;padding-bottom:84px;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 16px;background:var(--pri);color:var(--pt)}
+h1{font-size:1.2rem;margin:0}
+.b{font-size:.75rem;padding:4px 9px;border:1px solid currentColor;border-radius:99px;margin-left:4px}
+.note,.m{margin:8px 12px 0;padding:9px 12px;border-radius:10px;font-size:.88rem;background:var(--wn);color:var(--wt)}
+.m{margin:10px 0 0}.err{background:var(--eb);color:var(--err)}
+.mapwrap{position:relative;margin:8px 12px;border-radius:14px;overflow:hidden}
+#map{height:38vh;min-height:240px;background:#cfd8d3}
+#mapmsg{position:absolute;top:8px;left:8px;right:60px;z-index:1100;margin:0}
+.zoom{position:absolute;top:8px;right:8px;z-index:1100;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:44px;padding:0;font-size:1.4rem}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin:8px 12px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat b{display:block;font-size:1.9rem;font-variant-numeric:tabular-nums}
+.stat span{color:var(--mut);font-size:.85rem}
+button{min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;font-weight:600}
+button.p{background:var(--pri);color:var(--pt);border-color:var(--pri)}
+button.d{color:var(--err)}button:disabled{opacity:.45}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>button{flex:1}
+input,textarea{width:100%;padding:0 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit}
+input{min-height:48px}textarea{height:130px;padding:8px 12px;font:.8rem monospace}
+label{display:block;font-weight:600;margin:12px 0 4px}
+.res button{display:block;width:100%;text-align:left;margin-top:6px;min-height:44px;padding:8px 12px;font-weight:500}
+ol{padding-left:22px;margin:8px 0 0}li{margin:6px 0}.mut{color:var(--mut);font-size:.85rem}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:2000;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;border-radius:0;min-height:58px;background:none}
+nav button[aria-selected=true]{color:var(--pri);box-shadow:inset 0 3px 0 var(--pri)}
+.pin{width:28px;height:28px;border-radius:50%;background:#0f7b4f;color:#fff;display:grid;place-items:center;font-weight:700;border:2px solid #fff}.pin.b{background:#c62828}
+/* minimal Leaflet CSS (inlined so the map works even where external stylesheets are blocked) */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;font:inherit}.leaflet-tile,.leaflet-marker-icon{user-select:none;-webkit-user-drag:none}
+.leaflet-tile{visibility:hidden}.leaflet-tile-loaded{visibility:inherit}
+.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-marker-pane{z-index:600}
+.leaflet-control{position:relative;z-index:800;float:left;clear:both;pointer-events:auto}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-bottom{bottom:0}.leaflet-right{right:0}.leaflet-right .leaflet-control{float:right}
+.leaflet-zoom-animated{transform-origin:0 0}.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:grab}
+.leaflet-touch-zoom{touch-action:pan-x pan-y}.leaflet-touch-drag{touch-action:pinch-zoom}.leaflet-touch-drag.leaflet-touch-zoom{touch-action:none}
+.leaflet-control-attribution{background:rgba(255,255,255,.85);color:#333;padding:0 5px;font-size:11px}.leaflet-control-attribution a{color:#0b5fa5}
+</style>
+</head>
+<body>
+<header><h1>🚴 Cycle Karnataka</h1><div><span class="b" id="gps">GPS: off</span><span class="b" id="net">Online</span></div></header>
+<div class="note"><b>Prototype – not a verified navigation system.</b> Don’t rely on it for real rides. Follow traffic rules and judge every road yourself.</div>
+<div class="mapwrap"><div id="map"></div><div class="m err" id="mapmsg" hidden></div>
+<div class="zoom"><button id="zi" aria-label="Zoom in">+</button><button id="zo" aria-label="Zoom out">−</button></div></div>
+
+<section id="t-ride">
+<div class="card"><div class="stats">
+<div class="stat"><b id="dist">0.00</b><span>km cycled</span></div>
+<div class="stat"><b id="time">00:00:00</b><span>elapsed</span></div>
+<div class="stat"><b id="spd">–</b><span>avg km/h</span></div>
+<div class="stat"><b id="npts">0</b><span>GPS points kept</span></div></div>
+<p class="mut" id="rideState" style="margin:10px 0"></p>
+<div class="row"><button class="p" id="bStart">Start</button><button id="bPause" disabled>Pause</button><button class="d" id="bStop" disabled>Stop</button></div>
+<div class="m err" id="rideErr" hidden></div></div>
+<div class="card"><button id="bLoc" style="width:100%">Show my location</button>
+<p class="mut" style="margin:8px 0 0">Keep the screen on while riding – phones pause GPS in the background. Only readings accurate to 40 m or better are recorded.</p></div>
+<details class="card"><summary><b>What needs internet?</b></summary>
+<p class="mut"><b>Needs internet:</b> map tiles (OpenStreetMap), place search (Nominatim), cycling routes (FOSSGIS bike routing server).<br><b>Works without internet:</b> GPS tracking, ride history, GPX/CSV export (once the page itself is loaded).<br><b>Not implemented:</b> offline maps, offline routing, elevation, live turn-by-turn voice guidance.</p></details>
+</section>
+
+<section id="t-plan" hidden>
+<div class="card"><div id="fields"></div>
+<button class="p" id="bRoute" style="width:100%;margin-top:14px">Get cycling route</button>
+<div class="m" id="planMsg" hidden></div></div>
+<div class="card" id="routeInfo" hidden></div>
+</section>
+
+<section id="t-hist" hidden>
+<div class="card" id="exp" hidden><b id="expName"></b><textarea readonly id="expText" style="margin-top:8px"></textarea>
+<div class="row" style="margin-top:8px"><button class="p" id="expDl">Download file</button><button id="expCp">Copy text</button></div><p class="mut" id="expMsg"></p></div>
+<div id="hist"></div>
+</section>
+
+<nav><button data-t="ride" aria-selected="true">🚴 Ride</button><button data-t="plan" aria-selected="false">🗺️ Plan</button><button data-t="hist" aria-selected="false">📋 History</button></nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script>
+/*PURE_START*/
+function hav(a,b){const R=6371008.8,r=Math.PI/180,x=(b.lat-a.lat)*r,y=(b.lng-a.lng)*r;
+ const h=Math.sin(x/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function fmtT(ms){const s=Math.floor(ms/1000),p=n=>String(n).padStart(2,'0');return p(Math.floor(s/3600))+':'+p(Math.floor(s%3600/60))+':'+p(s%60)}
+function fmtKm(m){return (m/1000).toFixed(2)}
+function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km'}
+function fmtDur(s){const t=Math.round(s/60),h=Math.floor(t/60);return h?h+' h '+t%60+' min':t+' min'}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function toGPX(r){const g={};r.pts.forEach(p=>(g[p.seg]=g[p.seg]||[]).push(p));
+ return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Cycle Karnataka prototype" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>Ride '+new Date(r.start).toISOString()+'</name>\n'+
+ Object.values(g).map(s=>'<trkseg>\n'+s.map(p=>'<trkpt lat="'+p.lat+'" lon="'+p.lng+'"><time>'+new Date(p.t).toISOString()+'</time></trkpt>').join('\n')+'\n</trkseg>').join('\n')+'\n</trk>\n</gpx>\n'}
+function toCSV(r){return 'segment,time_iso,latitude,longitude,accuracy_m\n'+r.pts.map(p=>[p.seg,new Date(p.t).toISOString(),p.lat,p.lng,p.acc].join(',')).join('\n')+'\n'}
+function stepText(s){const m=s.maneuver||{},t=m.type,d=m.modifier,on=s.name?' on '+s.name:'',to=s.name?' onto '+s.name:'';
+ if(t==='depart')return 'Start'+on;
+ if(t==='arrive')return 'Arrive at your destination';
+ if(t==='roundabout'||t==='rotary')return 'Enter the roundabout'+(m.exit?', take exit '+m.exit:'')+to;
+ if(d==='uturn')return 'Make a U-turn'+to;
+ if(d==='straight'||t==='continue'||t==='new name')return 'Continue straight'+on;
+ return ('Turn '+(d||'')).trim()+to}
+/*PURE_END*/
+
+const $=id=>document.getElementById(id);
+const ROUTE='https://routing.openstreetmap.de/routed-bike/route/v1/driving/';
+const PLACES=[ // approximate centre points, entered by hand
+{n:'Vidhana Soudha, Bengaluru',lat:12.9796,lng:77.5907},{n:'Cubbon Park, Bengaluru',lat:12.9763,lng:77.5929},
+{n:'Lalbagh, Bengaluru',lat:12.9507,lng:77.5848},{n:'Nandi Hills',lat:13.3702,lng:77.6835},
+{n:'Mysuru Palace',lat:12.3052,lng:76.6552},{n:'Madikeri (Coorg)',lat:12.4244,lng:75.7382},
+{n:'Mangaluru',lat:12.9141,lng:74.8560},{n:'Udupi',lat:13.3409,lng:74.7421},{n:'Hubballi',lat:15.3647,lng:75.1240},
+{n:'Belagavi',lat:15.8497,lng:74.4977},{n:'Hampi',lat:15.3350,lng:76.4600},{n:'Badami',lat:15.9149,lng:75.6767},
+{n:'Gokarna',lat:14.5479,lng:74.3188},{n:'Kalaburagi',lat:17.3297,lng:76.8343}];
+
+let map=null,me=null,acc=null,trail=null,routeLayer=null,marks={},pick=null,watchId=null,locating=false,centered=false,here=null,ride=null,wl=null,flash='',storeOK=true,exp={};
+const wp={a:null,b:null};
+function loadRides(){try{return JSON.parse(localStorage.getItem('ck_rides')||'[]')}catch(e){storeOK=false;return[]}}
+function saveRides(){try{localStorage.setItem('ck_rides',JSON.stringify(rides))}catch(e){storeOK=false}}
+let rides=loadRides();
+
+/* ---------- map ---------- */
+function mapMsg(t){const m=$('mapmsg');m.textContent=t||'';m.hidden=!t}
+function initMap(){
+ if(typeof L==='undefined'){mapMsg('The map library could not load (needs internet). Ride tracking and history still work, without a map.');return}
+ map=L.map('map',{zoomControl:false}).setView([12.9716,77.5946],11);
+ let ok=false,bad=0;
+ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'})
+  .on('tileload',()=>{ok=true;mapMsg('')})
+  .on('tileerror',()=>{if(++bad>=3&&!ok)mapMsg('Map tiles could not load (no internet, or this page blocks outside images). Your location and routes still work, but no base map is shown.')}).addTo(map);
+ trail=L.polyline([],{color:'#e8a317',weight:5}).addTo(map);
+ map.on('click',e=>{if(!pick)return;setPoint(pick,{name:'Map point ('+e.latlng.lat.toFixed(4)+', '+e.latlng.lng.toFixed(4)+')',lat:e.latlng.lat,lng:e.latlng.lng});pick=null;note('')});
+}
+$('zi').onclick=()=>map&&map.zoomIn();$('zo').onclick=()=>map&&map.zoomOut();
+
+/* ---------- GPS + ride ---------- */
+function rideErr(t){const e=$('rideErr');e.hidden=!t;e.textContent=t||''}
+function setGps(t){$('gps').textContent='GPS: '+t}
+function elapsed(){return ride?ride.ms+(ride.state==='run'?Date.now()-ride.since:0):0}
+function syncWatch(){const want=!!ride||locating;
+ if(want&&watchId==null){setGps('searching…');watchId=navigator.geolocation.watchPosition(onPos,onGpsErr,{enableHighAccuracy:true,maximumAge:2000,timeout:30000})}
+ if(!want&&watchId!=null){navigator.geolocation.clearWatch(watchId);watchId=null;setGps('off');here=null;centered=false;
+  if(me&&map){map.removeLayer(me);map.removeLayer(acc);me=acc=null}}}
+function onPos(p){const c=p.coords;rideErr('');setGps('±'+Math.round(c.accuracy)+' m');here={lat:c.latitude,lng:c.longitude};
+ if(map){const ll=[c.latitude,c.longitude];
+  if(!me){me=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#1976d2',fillOpacity:1}).addTo(map);acc=L.circle(ll,{radius:c.accuracy,weight:1,opacity:.4,fillOpacity:.1}).addTo(map)}
+  else{me.setLatLng(ll);acc.setLatLng(ll);acc.setRadius(c.accuracy)}
+  if(!centered){map.setView(ll,16);centered=true}else if(ride&&ride.state==='run')map.panTo(ll)}
+ if(!ride||ride.state!=='run'||c.accuracy>40)return;
+ const pt={lat:+c.latitude.toFixed(6),lng:+c.longitude.toFixed(6),t:p.timestamp,acc:Math.round(c.accuracy),seg:ride.seg};
+ const pv=ride.pts[ride.pts.length-1];
+ if(pv&&pv.seg===pt.seg){const d=hav(pv,pt),dt=(pt.t-pv.t)/1000;if(d<4)return;if(dt>0&&d/dt>25)return;ride.dist+=d}
+ ride.pts.push(pt);drawTrail();tick()}
+function onGpsErr(e){const m={1:'Location permission was denied. In Chrome, tap the lock icon next to the address, choose Permissions, allow Location, then try again.',2:'Your position is unavailable (no GPS signal?). Try going outdoors.',3:'Timed out waiting for GPS. Try going outdoors.'};
+ rideErr(m[e.code]||'GPS error: '+e.message);setGps(e.code===1?'denied':'error');
+ if(e.code===1){locating=false;$('bLoc').textContent='Show my location';
+  if(ride&&!ride.pts.length){ride=null;ui()}else if(ride&&ride.state==='run')pauseToggle();syncWatch()}}
+function drawTrail(){if(!trail||!ride)return;const s=[];ride.pts.forEach(p=>(s[p.seg]=s[p.seg]||[]).push([p.lat,p.lng]));trail.setLatLngs(s.filter(Boolean))}
+function tick(){const ms=elapsed(),d=ride?ride.dist:0;$('dist').textContent=fmtKm(d);$('time').textContent=fmtT(ms);
+ $('spd').textContent=ms>10000?(d/1000/(ms/3.6e6)).toFixed(1):'–';$('npts').textContent=ride?ride.pts.length:0}
+function ui(){const r=ride;$('bStart').disabled=!!r;$('bPause').disabled=!r;$('bStop').disabled=!r;
+ $('bPause').textContent=r&&r.state==='pause'?'Resume':'Pause';
+ $('rideState').textContent=!r?(flash||'Ready. Press Start when you’re ready to ride.'):r.state==='run'?'Recording… (needs GPS accuracy of 40 m or better)':'Paused – distance is not counted while paused.';tick()}
+function pauseToggle(){if(!ride)return;if(ride.state==='run'){ride.ms+=Date.now()-ride.since;ride.state='pause'}else{ride.seg++;ride.since=Date.now();ride.state='run'}ui()}
+async function lock(on){try{if(on&&'wakeLock'in navigator)wl=await navigator.wakeLock.request('screen');else if(!on&&wl){await wl.release();wl=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(ride&&document.visibilityState==='visible')lock(true)});
+function arm(b,label,fn){if(b.dataset.armed){clearTimeout(+b.dataset.armed);delete b.dataset.armed;b.textContent=b.dataset.t;fn();return}
+ b.dataset.t=b.textContent;b.textContent=label;b.dataset.armed=setTimeout(()=>{delete b.dataset.armed;b.textContent=b.dataset.t},4000)}
+function stopRide(){const r=ride;if(r.state==='run')r.ms+=Date.now()-r.since;ride=null;lock(false);syncWatch();
+ if(r.pts.length>=2){rides.push({id:r.start,start:r.start,ms:r.ms,dist:r.dist,pts:r.pts});saveRides();renderHist();
+  flash='Ride finished: '+fmtKm(r.dist)+' km in '+fmtT(r.ms)+'.'+(storeOK?' Saved in History.':' Could not be saved here (storage unavailable) – open History and export it now.')}
+ else flash='That ride had too few accurate GPS points, so nothing was saved.';
+ ui()}
+$('bStart').onclick=()=>{rideErr('');if(!navigator.geolocation){rideErr('This browser does not support GPS location, so rides cannot be recorded.');return}
+ flash='';ride={state:'run',pts:[],seg:0,dist:0,ms:0,since:Date.now(),start:Date.now()};if(trail)trail.setLatLngs([]);syncWatch();lock(true);ui()};
+$('bPause').onclick=pauseToggle;
+$('bStop').onclick=e=>arm(e.currentTarget,'Tap again to stop & save',stopRide);
+$('bLoc').onclick=()=>{if(!navigator.geolocation){rideErr('This browser does not support GPS location.');return}
+ locating=!locating;centered=false;rideErr('');$('bLoc').textContent=locating?'Hide my location':'Show my location';syncWatch()};
+
+/* ---------- route planning ---------- */
+function note(t,err){const e=$('planMsg');e.hidden=!t;e.textContent=t||'';e.className='m'+(err?' err':'')}
+function clearRoute(){if(routeLayer&&map)map.removeLayer(routeLayer);routeLayer=null;$('routeInfo').hidden=true}
+function setPoint(k,p){wp[k]=p;$('in'+k).value=p.name;$('res'+k).innerHTML='';clearRoute();
+ if(!map)return;if(marks[k])map.removeLayer(marks[k]);
+ marks[k]=L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div class="pin '+k+'">'+(k==='a'?'A':'B')+'</div>',iconSize:[28,28],iconAnchor:[14,14]})}).addTo(map);
+ map.setView([p.lat,p.lng],Math.max(map.getZoom(),13))}
+$('fields').innerHTML=[['a','Start'],['b','Destination']].map(([k,l])=>'<label for="in'+k+'">'+l+'</label><input id="in'+k+'" list="pl" placeholder="Search a place in Karnataka" autocomplete="off"><div class="row" style="margin-top:6px"><button data-f="'+k+'" data-a="find">Find</button><button data-f="'+k+'" data-a="pick">Pick on map</button>'+(k==='a'?'<button data-f="a" data-a="me">My location</button>':'')+'</div><div class="res" id="res'+k+'"></div>').join('')+'<datalist id="pl">'+PLACES.map(p=>'<option value="'+esc(p.n)+'">').join('')+'</datalist>';
+async function find(k){const q=$('in'+k).value.trim(),R=$('res'+k);R.innerHTML='';note('');
+ if(!q){note('Type a place name first.',1);return}
+ const ql=q.toLowerCase(),saved=PLACES.filter(p=>p.n.toLowerCase().includes(ql)),ex=saved.find(p=>p.n.toLowerCase()===ql);
+ if(ex){setPoint(k,{name:ex.n,lat:ex.lat,lng:ex.lng});return}
+ const list=saved.map(p=>({name:p.n,lat:p.lat,lng:p.lng,src:'saved place'}));let warn='';
+ if(!navigator.onLine)warn='You are offline, so only saved places were searched.';
+ else{R.textContent='Searching…';
+  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),15000);
+   const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=in&accept-language=en&viewbox=74.0,18.5,78.6,11.5&bounded=1&q='+encodeURIComponent(q),{signal:c.signal});clearTimeout(t);
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   (await r.json()).forEach(x=>list.push({name:x.display_name,lat:+x.lat,lng:+x.lon,src:'online search'}))}
+  catch(e){warn='The online place search could not be reached ('+(e.name==='AbortError'?'timed out':e.message)+'), so only saved places were searched.'}}
+ R.innerHTML=list.map((p,i)=>'<button data-pick="'+k+'" data-i="'+i+'">'+esc(p.name)+' <small>· '+p.src+'</small></button>').join('');R._list=list;
+ if(!list.length)note('No places found for “'+q+'”. '+(warn||'Try another spelling or a nearby town.'),1);else if(warn)note(warn,1)}
+$('fields').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.pick){const p=$('res'+b.dataset.pick)._list[b.dataset.i];setPoint(b.dataset.pick,{name:p.name,lat:p.lat,lng:p.lng});note('');return}
+ const k=b.dataset.f,a=b.dataset.a;
+ if(a==='find')find(k);
+ if(a==='pick'){if(!map){note('The map is not available, so you can’t pick a point on it.',1);return}pick=k;note('Now tap the map to place the '+(k==='a'?'start':'destination')+'.')}
+ if(a==='me'){if(here)setPoint('a',{name:'My location',lat:here.lat,lng:here.lng});
+  else{if(!navigator.geolocation){note('This browser does not support GPS location.',1);return}locating=true;$('bLoc').textContent='Hide my location';syncWatch();note('Looking for your location… tap “My location” again when the GPS badge shows an accuracy.')}}});
+$('fields').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id.startsWith('in'))find(e.target.id.slice(2))});
+$('bRoute').onclick=async()=>{note('');
+ if(!wp.a||!wp.b){note('Choose both a start and a destination first (use Find, then tap a result).',1);return}
+ if(!navigator.onLine){note('You appear to be offline. Routing needs internet – this prototype has no offline routing.',1);return}
+ clearRoute();const btn=$('bRoute');btn.disabled=true;btn.textContent='Requesting route…';
+ try{const c=new AbortController(),t=setTimeout(()=>c.abort(),25000);
+  const r=await fetch(ROUTE+wp.a.lng+','+wp.a.lat+';'+wp.b.lng+','+wp.b.lat+'?overview=full&geometries=geojson&steps=true',{signal:c.signal});clearTimeout(t);
+  if(!r.ok)throw new Error('server answered HTTP '+r.status);
+  const j=await r.json();
+  if(j.code!=='Ok'||!j.routes||!j.routes.length)throw new Error(j.code==='NoRoute'?'no cycling route was found between these points':(j.message||j.code||'unknown reply'));
+  const rt=j.routes[0],cs=rt.geometry&&rt.geometry.coordinates;
+  if(!cs||cs.length<2)throw new Error('the service returned no usable road geometry');
+  if(map){routeLayer=L.polyline(cs.map(c=>[c[1],c[0]]),{color:'#1565c0',weight:6,opacity:.85}).addTo(map);map.fitBounds(routeLayer.getBounds(),{padding:[24,24]})}
+  const st=(rt.legs||[]).flatMap(l=>l.steps||[]);
+  $('routeInfo').innerHTML='<b>'+fmtDist(rt.distance)+' · about '+fmtDur(rt.duration)+'</b><div class="mut">Estimates from the routing service, not measured. Check the road yourself – it may include roads that are unsuitable or unsafe.</div>'+
+   (st.length?'<ol>'+st.map(s=>'<li>'+esc(stepText(s))+' <span class="mut">('+fmtDist(s.distance)+')</span></li>').join('')+'</ol>':'<p class="mut">The service sent no turn instructions for this route.</p>');
+  $('routeInfo').hidden=false}
+ catch(e){clearRoute();note('Route request failed: '+(e.name==='AbortError'?'it timed out':e.message)+'. No route is shown. Check your internet and try again. (Inside Claude’s preview, outside services are blocked.)',1)}
+ btn.disabled=false;btn.textContent='Get cycling route'};
+
+/* ---------- history + export ---------- */
+function renderHist(){$('hist').innerHTML=(storeOK?'':'<div class="m err" style="margin:8px 12px">Saving is not available here, so rides are lost when you close the page.</div>')+
+ (rides.length?'':'<div class="card">No rides saved yet. Finish a ride and it appears here.</div>')+
+ rides.slice().reverse().map(r=>{const h=r.ms/3.6e6;return '<div class="card"><b>'+esc(new Date(r.start).toLocaleString())+'</b><div>'+fmtKm(r.dist)+' km · '+fmtT(r.ms)+(h>0?' · avg '+(r.dist/1000/h).toFixed(1)+' km/h':'')+'</div><div class="row" style="margin-top:10px">'+
+  ['gpx','csv','del'].map(x=>'<button data-x="'+x+'" data-id="'+r.id+'"'+(x==='del'?' class="d">Delete':'>'+x.toUpperCase())+'</button>').join('')+'</div></div>'}).join('')}
+$('hist').addEventListener('click',e=>{const b=e.target.closest('button'),r=b&&rides.find(x=>String(x.id)===b.dataset.id);if(!r)return;
+ if(b.dataset.x==='del')return arm(b,'Tap again to delete',()=>{rides=rides.filter(x=>x!==r);saveRides();renderHist()});
+ const g=b.dataset.x==='gpx';exp={name:'cycle-karnataka-'+new Date(r.start).toISOString().slice(0,19).replace(/[:T]/g,'-')+(g?'.gpx':'.csv'),text:g?toGPX(r):toCSV(r),type:g?'application/gpx+xml':'text/csv'};
+ $('expName').textContent=exp.name;$('expText').value=exp.text;$('expMsg').textContent='';$('exp').hidden=false;$('exp').scrollIntoView({block:'nearest'})});
+$('expDl').onclick=()=>{try{const u=URL.createObjectURL(new Blob([exp.text],{type:exp.type})),a=document.createElement('a');a.href=u;a.download=exp.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
+ $('expMsg').textContent='Download started. If no file appears (for example inside Claude’s preview), use “Copy text” instead.'}catch(e){$('expMsg').textContent='Download failed ('+e.message+'). Use “Copy text” instead.'}};
+$('expCp').onclick=async()=>{try{await navigator.clipboard.writeText(exp.text);$('expMsg').textContent='Copied. Paste into Notepad and save it with the file name shown above.'}
+ catch(e){$('expText').select();$('expMsg').textContent=(document.execCommand&&document.execCommand('copy'))?'Copied. Paste into Notepad and save it with the file name shown above.':'Copy failed – press and hold the text box, select all, and copy.'}};
+
+/* ---------- tabs, network badge, start ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.setAttribute('aria-selected',x===b));
+ ['ride','plan','hist'].forEach(t=>$('t-'+t).hidden=t!==b.dataset.t)});
+function net(){$('net').textContent=navigator.onLine?'Online':'Offline'}
+addEventListener('online',net);addEventListener('offline',net);net();
+setInterval(tick,500);initMap();renderHist();ui();
+</script>
+</body>
+</html>
 
